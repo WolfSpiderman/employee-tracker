@@ -25,22 +25,58 @@ inquirer.createPromptModule([
             'Exit'
         ]
     },
-]).then((answers) => {
-    if (answers.action === 'View all departments') {
-        // view departments callback function here
-    } else if (answers.action === 'View all roles') {
-        // view roles callback here
-    } else if (answers.action === 'View all employees') {
-        // view employees callback here
-    } else if (answers.action === 'Add a department') {
-        // adding department callback here
-    } else if (answers.action === 'Add a role') {
-        // adding role here
-    } else if (answers.action === 'Add an employee') {
-        // add employee
-    } else if (answers.action === 'Update an employee role') {
-        // update employee role
-    } else {
-        process.exit();
+]).then(async (answers) => {
+    switch (answers.action) {
+        case 'View all departments':
+            await viewDepartments();
+            break;
+        case 'View all roles':
+            await viewRoles();
+            break;
+        case 'View all employees':
+            await viewEmployees();
+            break;
+        case 'Add a department':
+            await addDepartment();
+            break;
+        case 'Add a role':
+            await addRole();
+            break;
+        case 'Add an employee':
+            await addEmployee();
+            break;
+        case 'Update an employee role':
+            await updateEmployeeRole();
+            break;
+        default:
+            process.exit();
     }
 });
+
+async function viewDepartments() {
+    // view departments callback function here
+}
+
+async function viewRoles() {
+    // view roles callback here
+}
+
+async function viewEmployees() {
+    // view employees callback here
+}
+
+async function addDepartment() {
+    // adding department callback here
+}
+
+async function addRole() {
+    // adding role here
+}
+
+async function addEmployee() {
+    // add employee
+}
+
+async function updateEmployeeRole() {
+    // update employee role
+}
