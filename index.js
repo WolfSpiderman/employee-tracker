@@ -303,7 +303,7 @@ const addEmployee = async () => {
       {
         type: 'input',
         name: 'managerId',
-        message: `If the new employee has an assigned supervisor/manager, put the supervisor/manager's Employee ID here. If not, leave field empty.`,
+        message: `What is the Employee ID of the new employee's manager, supervisor, or department head?`,
         validate: validateEmployeeId,
         when: answer => answer.mng,
       }
