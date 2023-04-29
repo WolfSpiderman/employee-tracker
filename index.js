@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
 require('console.table');
-const util = require('util');
+const fs = require('fs');
 require('dotenv').config();
 
 // Create a pool of connections
@@ -15,6 +15,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+async function runProgram() {
 // Execute a query using a connection from the pool
 const query = async (sql, values) => {
   const promisePool = pool.promise();
@@ -22,12 +23,38 @@ const query = async (sql, values) => {
   return results;
 };
 
+const employeeNames = async () => {
+const readEmpQuery = fs.readFileSync('./db/empViewQuery.sql', 'utf8');
+    // Get employee data from empViewQuery.sql file
+    const [empRows] = await pool.promise().query(readEmpQuery);
+    const choices = empRows.map(emp => ({
+      name: `${emp.first_name} ${emp.last_name} (${emp.role}, ${emp.department})`,
+      value: emp.id
+    }))
+    return choices;
+  };
+const employeeChoices = await employeeNames();
+
+console.log(employeeChoices);
+
+
+async function validateEmployeeId(employeeId) {
+  const employees = await query('SELECT id FROM employee');
+  const existingEmployeeIds = employees.map((emp) => emp.id);
+  if (existingEmployeeIds.includes(Number(employeeId))) { // Check if employee ID exists
+    console.log('employee id exists')
+    return true;
+  } else {
+    console.log('employee doesnt exist')
+    return 'Employee ID does not exist. Please enter a valid employee ID.';
+  }
+};
+
 const start = async () => {
   try {
-    const { command } = await inquirer.prompt([
-      {
+    const answer = await inquirer.prompt({
         type: 'list',
-        name: 'command',
+        name: 'action',
         message: 'What would you like to do?',
         choices: [
           'View all departments',
@@ -37,12 +64,11 @@ const start = async () => {
           'Add a role',
           'Add an employee',
           'Update an employee role',
-          'Exit',
-        ],
-      },
-    ]);
+          'Exit'
+        ]
+      });
 
-    switch (command) {
+    switch (answer.action) {
       case 'View all departments':
         console.table(await query('SELECT * FROM department'));
         break;
@@ -62,7 +88,7 @@ const start = async () => {
         await addEmployee();
         break;
       case 'Update an employee role':
-        console.log('Update employee role function');
+        updateEmpRole(employeeChoices);
         break;
       default:
         pool.end();
@@ -74,7 +100,7 @@ const start = async () => {
     await start();
   }
 };
-
+// Returns highest id currently in the passed table
 const getMaxId = async (tableName) => {
   try {
     const result = await query(`SELECT MAX(id) AS maxId FROM ${tableName}`);
@@ -84,7 +110,7 @@ const getMaxId = async (tableName) => {
     return -1;
   }
 };
-
+// Function for collecting data and adding new department to department table
 const addDepartment = async () => {
   try {
     console.clear();
@@ -133,7 +159,7 @@ const addDepartment = async () => {
     await start();
   }
 };
-
+// Function for collecting data for and adding new role to role table
 const addRole = async () => {
   try {
     console.clear();
@@ -202,8 +228,8 @@ const addRole = async () => {
     console.error(error);
     await start();
   }
-}
-
+};
+// Function for collecting data for and adding new employee to employee table
 const addEmployee = async () => {
   try {
     console.clear();
@@ -216,21 +242,6 @@ const addEmployee = async () => {
     }
     
     const maxEmp = await getMaxId('employee');
-
-    async function validateEmployeeId(employeeId) {
-    
-      const employees = await query('SELECT id FROM employee');
-      const existingEmployeeIds = employees.map((emp) => emp.id);
-    
-      if (existingEmployeeIds.includes(Number(employeeId))) { // Check if employee ID exists
-        console.log('employee id exists')
-        return true;
-      } else {
-        console.log('employee doesnt exist')
-        return 'Employee ID does not exist. Please enter a valid employee ID.';
-      }
-    }
-    
 
     const { empId, firstName, lastName, departmentId } = await inquirer.prompt([
       {
@@ -275,20 +286,22 @@ const addEmployee = async () => {
         const result = await query('SELECT id, title FROM role WHERE department_id = ?', dept);
     
         if (!result.length) {
-          console.log('No roles currently exist.. Please create one first, or source one of the seeds files.');
-          return [];
+          console.log('No roles currently exist in this department.. Please create one first, or source one of the seeds files.');
+          await start();
+          return;
         }
     
         return result;
       } catch (error) {
         console.error(error);
+        await start();
         return [];
       }
     };
 
     const deptRoles = await roles(departmentId);
 
-    const { roleId, mng, managerId } = await inquirer.prompt([
+    const { roleId, managerId } = await inquirer.prompt([
       {
         type: 'list',
         name: 'roleId',
@@ -331,6 +344,81 @@ const addEmployee = async () => {
     console.error(error);
     await start();
   }
-}
+};
+
+const updateEmpRole = async (choices) => {
+  try {
+    console.clear();
+    
+    if (!choices.length) {
+      console.log('No employees currently exist.. Please create one first, or source one of the seeds files.');
+      await start();
+      return;
+    }
+
+    const departments = await query('SELECT id, name FROM department');
+
+    if (!departments.length) {
+      console.log('No departments currently exist.. Please create one first, or source one of the seeds files.');
+      await start();
+      return;
+    }
+
+    // Prompt user to select an employee, new department, and then new role from that department
+    const { empId, newDept } = await inquirer.prompt([
+      {
+      type: 'list',
+      name: 'empId',
+      message: 'Which employee is getting a new role?',
+      choices: choices
+    },
+    {
+      type: 'list',
+      name: 'newDept',
+      message: `What department is the employee's new role in?`,
+      choices: departments.map((dept) => ({ name: dept.name, value: dept.id})),
+    }
+  ]);
+  const getRoles = async (dept) => {
+    try {
+      const result = await query('SELECT id, title FROM role WHERE department_id = ?', dept);
+  
+      if (!result.length) {
+        console.log('No roles currently exist in this department.. Please create one first, or source one of the seeds files.');
+        return;
+      }
+      return result;
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+  };
+  const deptRoles = await getRoles(newDept);
+
+  if(!deptRoles) {
+    await start();
+    return;
+  }
+
+  const { newRole } = await inquirer.prompt({
+    type: 'list',
+    name: 'newRole',
+    message: `What is the employee's new role?`,
+    choices: deptRoles.map((role) => ({ name: role.title, value: role.id }))
+  });
+
+  const result = await query('UPDATE employee SET role_id = ? WHERE id = ?', [newRole, empId]);
+
+  console.log(`Employee's role has been updated!`);
+  return start();
+  } catch (error) {
+    console.error(error);
+    await start();
+    return;
+  }
+};
+
 
 start();
+};
+runProgram();
