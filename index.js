@@ -23,18 +23,6 @@ const query = async (sql, values) => {
   return results;
 };
 
-const employeeNames = async () => {
-const readEmpQuery = fs.readFileSync('./db/empViewQuery.sql', 'utf8');
-    // Get employee data from empViewQuery.sql file
-    const [empRows] = await pool.promise().query(readEmpQuery);
-    const choices = empRows.map(emp => ({
-      name: `${emp.first_name} ${emp.last_name} (${emp.role}, ${emp.department})`,
-      value: emp.id
-    }))
-    return choices;
-  };
-const employeeChoices = await employeeNames();
-
 async function validateEmployeeId(employeeId) {
   const employees = await query('SELECT id FROM employee');
   const existingEmployeeIds = employees.map((emp) => emp.id);
@@ -85,7 +73,7 @@ const start = async () => {
         await addEmployee();
         break;
       case 'Update an employee role':
-        await updateEmpRole(employeeChoices);
+        await updateEmpRole();
         break;
       default:
         pool.end();
@@ -343,10 +331,22 @@ const addEmployee = async () => {
   }
 };
 
-const updateEmpRole = async (employees) => {
+const updateEmpRole = async () => {
   try {
     console.clear();
-    
+
+    const employeeNames = async () => {
+      const readEmpQuery = fs.readFileSync('./db/empViewQuery.sql', 'utf8');
+          // Get employee data from empViewQuery.sql file
+          const [empRows] = await pool.promise().query(readEmpQuery);
+          const choices = empRows.map(emp => ({
+            name: `${emp.first_name} ${emp.last_name} (${emp.role}, ${emp.department})`,
+            value: emp.id
+          }))
+          return choices;
+        };
+      const employees = await employeeNames();
+
     if (!employees.length) {
       console.log('No employees currently exist.. Please create one first, or source one of the seeds files.');
       await start();
