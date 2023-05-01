@@ -22,6 +22,8 @@ You will need mysql and NodeJs to run this application in your command line. Aft
 
 ## Usage
 
+<img src="./images/emp-tracker.png" alt="screenshot of employee tracker command line app" style="display: block; margin: 0; max-width: 300px;">
+
 After doing the above steps, open the mysql shell and run source schema.sql, followed by source seeds.sql(or boringSeeds.sql) to create the database and insert some seed data. Then, run node index.js to start the application. You will see a menu with the options to view all departments, roles, or employees, add a new department, role, or employee, to update an employee role, or to exit. Selecting one of the view options will display an organized list of all the current existing departments, roles, or employees from the database. Selecting one of the options to add a new entry will trigger a series of prompts to gather the necessary data for the new department, role, or employee. Selecting the update employee option will have the user select the employee they are updating from a list, followed by two more list prompts to select the department and then new role.
 
 A video of the app being demonstrated can be found [here](https://drive.google.com/file/d/1qac8KQXamclzLY_TIbFVyQGCTPZZ1PT3/view).
