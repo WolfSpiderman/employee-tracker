@@ -35,9 +35,6 @@ const readEmpQuery = fs.readFileSync('./db/empViewQuery.sql', 'utf8');
   };
 const employeeChoices = await employeeNames();
 
-console.log(employeeChoices);
-
-
 async function validateEmployeeId(employeeId) {
   const employees = await query('SELECT id FROM employee');
   const existingEmployeeIds = employees.map((emp) => emp.id);
@@ -88,7 +85,7 @@ const start = async () => {
         await addEmployee();
         break;
       case 'Update an employee role':
-        updateEmpRole(employeeChoices);
+        await updateEmpRole(employeeChoices);
         break;
       default:
         pool.end();
@@ -346,11 +343,11 @@ const addEmployee = async () => {
   }
 };
 
-const updateEmpRole = async (choices) => {
+const updateEmpRole = async (employees) => {
   try {
     console.clear();
     
-    if (!choices.length) {
+    if (!employees.length) {
       console.log('No employees currently exist.. Please create one first, or source one of the seeds files.');
       await start();
       return;
@@ -370,7 +367,7 @@ const updateEmpRole = async (choices) => {
       type: 'list',
       name: 'empId',
       message: 'Which employee is getting a new role?',
-      choices: choices
+      choices: employees
     },
     {
       type: 'list',
